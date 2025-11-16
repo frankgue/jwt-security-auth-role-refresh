@@ -44,4 +44,28 @@ public class ProductController {
     public ResponseEntity<?> saveProduct(@Valid @RequestBody Product product){
         return ResponseEntity.ok(productService.saveProduct(product));
     }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> updateProduct(@PathVariable Long id, @Valid @RequestBody Product product){
+        Product existingProduct = productService.getProductById(id).orElseThrow(() -> new ProductResourceNotFound("Product with id " + id + " not found"));
+        if(existingProduct == null){
+            throw new ProductResourceNotFound("Product with id " + id + " not found");
+        }
+        existingProduct.setName(product.getName());
+        existingProduct.setPrice(product.getPrice());
+        Product updatedProduct = productService.updateProduct(existingProduct);
+        return ResponseEntity.ok(updatedProduct);
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deleteProduct(@PathVariable Long id){
+        Product existingProduct = productService.getProductById(id).orElseThrow(() -> new ProductResourceNotFound("Product with id " + id + " not found"));
+        if(existingProduct == null){
+            throw new ProductResourceNotFound("Product with id " + id + " not found");
+        }
+        productService.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
 }
