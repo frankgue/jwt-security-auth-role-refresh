@@ -16,7 +16,7 @@ import java.math.BigDecimal;
  */
 @Data
 @Builder
-public class ProductResponse {
+public class ProductDto {
     private Long id;
     private String name;
     private String description;
