@@ -1,5 +1,8 @@
 package com.gkfcsolution.jwtsecurityauthrolerefresh.service;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+
 /**
  * Created on 2025 at 10:59
  * File: null.java
@@ -10,5 +13,8 @@ package com.gkfcsolution.jwtsecurityauthrolerefresh.service;
  * @time 10:59
  */
 public interface JwtService {
-
+    String generateAccessToken(Authentication authentication);
+    String generateRefreshToken(Authentication authentication);
+    boolean isValidToken(String token, UserDetails userDetails);
+    boolean isRefreshToken(String token);
 }
