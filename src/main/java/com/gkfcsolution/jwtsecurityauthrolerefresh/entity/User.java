@@ -2,8 +2,6 @@ package com.gkfcsolution.jwtsecurityauthrolerefresh.entity;
 
 import com.gkfcsolution.jwtsecurityauthrolerefresh.entity.enums.Role;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -29,16 +27,12 @@ public class User {
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;
 
-    @NotBlank(message = "Full name is required")
-    @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
     @Column(
             name = "first_name",
             nullable = false
     )
     private String firstName;
 
-    @NotBlank(message = "Username is required")
-    @Size(min = 3, max = 20, message = "Username must be between 3 and 20 characters")
     @Column(
             name = "username",
             nullable = false,
@@ -46,8 +40,6 @@ public class User {
     )
     private String username;
 
-    @NotBlank(message = "Password is required")
-    @Size(min = 6, message = "Password must be at least 6 characters long")
     @Column(
             name = "password",
             nullable = false
