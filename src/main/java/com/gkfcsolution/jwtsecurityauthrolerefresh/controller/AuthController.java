@@ -1,6 +1,7 @@
 package com.gkfcsolution.jwtsecurityauthrolerefresh.controller;
 
 import com.gkfcsolution.jwtsecurityauthrolerefresh.dto.LoginRequest;
+import com.gkfcsolution.jwtsecurityauthrolerefresh.dto.RefreshTokenRequest;
 import com.gkfcsolution.jwtsecurityauthrolerefresh.dto.RegisterRequest;
 import com.gkfcsolution.jwtsecurityauthrolerefresh.dto.TokenPair;
 import com.gkfcsolution.jwtsecurityauthrolerefresh.service.AuthService;
@@ -40,6 +41,12 @@ public class AuthController {
     public ResponseEntity<?> loginUser(@Valid @RequestBody LoginRequest loginRequest){
         TokenPair tokenPair = authService.login(loginRequest);
 
+        return ResponseEntity.ok(tokenPair);
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<?> refreshToken(@Valid @RequestBody RefreshTokenRequest request){
+        TokenPair tokenPair = authService.refreshToken(request);
         return ResponseEntity.ok(tokenPair);
     }
 

@@ -1,6 +1,7 @@
 package com.gkfcsolution.jwtsecurityauthrolerefresh.service.impl;
 
 import com.gkfcsolution.jwtsecurityauthrolerefresh.dto.LoginRequest;
+import com.gkfcsolution.jwtsecurityauthrolerefresh.dto.RefreshTokenRequest;
 import com.gkfcsolution.jwtsecurityauthrolerefresh.dto.RegisterRequest;
 import com.gkfcsolution.jwtsecurityauthrolerefresh.dto.TokenPair;
 import com.gkfcsolution.jwtsecurityauthrolerefresh.entity.User;
@@ -15,6 +16,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RestController;
@@ -36,6 +39,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final UserDetailsService userDetailsService;
 
     @Override
     @Transactional
@@ -73,5 +77,33 @@ public class AuthServiceImpl implements AuthService {
 
         // Generate Token Pair
         return jwtService.generateTokenPair(authentication);
+    }
+
+    @Override
+    public TokenPair refreshToken(RefreshTokenRequest request) {
+        String refreshToken = request.getRefreshToken();
+        //Check if it is valid refresh refreshToken
+        if (!jwtService.isRefreshToken(refreshToken)) {
+            log.error("Invalid refresh refreshToken");
+            throw new IllegalArgumentException("Invalid refresh refreshToken");
+        }
+
+        String  username = jwtService.extractUsernameFromToken(refreshToken);
+        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+        if (userDetails == null){
+            log.error("User not found for username: {}", username);
+            throw new IllegalArgumentException("User not found");
+        }
+
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                userDetails,
+                null,
+                userDetails.getAuthorities()
+        );
+
+        String accessToken = jwtService.generateAccessToken(authenticationToken);
+
+        return new TokenPair(accessToken, refreshToken);
     }
 }
