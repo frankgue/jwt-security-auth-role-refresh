@@ -1,6 +1,8 @@
 package com.gkfcsolution.jwtsecurityauthrolerefresh.controller;
 
+import com.gkfcsolution.jwtsecurityauthrolerefresh.dto.LoginRequest;
 import com.gkfcsolution.jwtsecurityauthrolerefresh.dto.RegisterRequest;
+import com.gkfcsolution.jwtsecurityauthrolerefresh.dto.TokenPair;
 import com.gkfcsolution.jwtsecurityauthrolerefresh.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,13 @@ public class AuthController {
         authService.registerUser(request);
         log.info("User {} registered successfully", request.getUsername());
         return ResponseEntity.ok("User registered successfully");
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> loginUser(@Valid @RequestBody LoginRequest loginRequest){
+        TokenPair tokenPair = authService.login(loginRequest);
+
+        return ResponseEntity.ok(tokenPair);
     }
 
 }

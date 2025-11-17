@@ -1,5 +1,6 @@
 package com.gkfcsolution.jwtsecurityauthrolerefresh.service;
 
+import com.gkfcsolution.jwtsecurityauthrolerefresh.dto.TokenPair;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -17,4 +18,6 @@ public interface JwtService {
     String generateRefreshToken(Authentication authentication);
     boolean isValidToken(String token, UserDetails userDetails);
     boolean isRefreshToken(String token);
+    String extractUsernameFromToken(String token);
+    TokenPair generateTokenPair(Authentication authentication);
 }

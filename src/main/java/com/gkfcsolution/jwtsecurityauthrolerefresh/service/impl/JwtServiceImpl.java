@@ -1,5 +1,6 @@
 package com.gkfcsolution.jwtsecurityauthrolerefresh.service.impl;
 
+import com.gkfcsolution.jwtsecurityauthrolerefresh.dto.TokenPair;
 import com.gkfcsolution.jwtsecurityauthrolerefresh.service.JwtService;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -30,27 +32,30 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 public class JwtServiceImpl implements JwtService {
-    @Value("${jwt.secret}")
+    @Value("${app.jwt.secret}")
     private String jwtSecret;
-    @Value("${jwt.expiration-ms}")
+    @Value("${app.jwt.expiration-ms}")
     private long jwtExpirationMs;
-    @Value("${jwt.refresh-token-expiration-ms}")
+    @Value("${app.jwt.refresh-expiration-ms}")
     private long refreshTokenExpirationMs;
     private static final String BEARER_PREFIX = "Bearer ";
 
     //Generate access token
+    @Override
     public String generateAccessToken(Authentication authentication) {
         return generateToken(authentication, jwtExpirationMs, new HashMap<>());
     }
     // Generate refresh token
+    @Override
     public String generateRefreshToken(Authentication authentication) {
 
-        Map<String, String> claims = new HashMap<>();
+        Map<String, Object> claims = new HashMap<>();
         claims.put("tokenType", "refresh");
 
        return generateToken(authentication, refreshTokenExpirationMs, claims);
     }
     // Validate token
+    @Override
     public boolean isValidToken(String token, UserDetails userDetails){
 
         final String username = extractUsernameFromToken(token);
@@ -89,16 +94,26 @@ public class JwtServiceImpl implements JwtService {
     }
 
     private SecretKey getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64URL.decode(jwtSecret);
+        byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    private String generateToken(Authentication authentication, long expirationTimeMs, Map<String, String> extraClaims) {
+    private String generateToken(Authentication authentication, long expirationTimeMs, Map<String, Object> extraClaims) {
         UserDetails userPrincipal = (UserDetails) authentication.getPrincipal();
 
+        // Ajouter les rôles dans les claims
+        extraClaims.put("roles",
+                userPrincipal.getAuthorities()
+                        .stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .toList()
+        );
         Date now = new Date(); // Time of token creation
         Date expiryDate = new Date(now.getTime() + expirationTimeMs); // Token expiration time
         return Jwts.builder()
+                .header()
+                .add("typ", "JWT")
+                .and()
                 .subject(userPrincipal.getUsername())
                 .claims(extraClaims)
                 .issuedAt(now)
@@ -107,13 +122,21 @@ public class JwtServiceImpl implements JwtService {
                 .compact();
     }
 
-    private String extractUsernameFromToken(String token) {
+    public String extractUsernameFromToken(String token) {
         return Jwts.parser()
                 .verifyWith(getSignInKey())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload()
                 .getSubject();
+    }
+
+    @Override
+    public TokenPair generateTokenPair(Authentication authentication) {
+        String accessToken = generateAccessToken(authentication);
+        String refreshToken = generateRefreshToken(authentication);
+
+        return new TokenPair(accessToken, refreshToken);
     }
 
 }

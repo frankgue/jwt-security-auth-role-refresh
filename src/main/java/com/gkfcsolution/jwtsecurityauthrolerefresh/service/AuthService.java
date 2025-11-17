@@ -1,6 +1,8 @@
 package com.gkfcsolution.jwtsecurityauthrolerefresh.service;
 
+import com.gkfcsolution.jwtsecurityauthrolerefresh.dto.LoginRequest;
 import com.gkfcsolution.jwtsecurityauthrolerefresh.dto.RegisterRequest;
+import com.gkfcsolution.jwtsecurityauthrolerefresh.dto.TokenPair;
 
 /**
  * Created on 2025 at 21:55
@@ -13,4 +15,5 @@ import com.gkfcsolution.jwtsecurityauthrolerefresh.dto.RegisterRequest;
  */
 public interface AuthService {
     void registerUser(RegisterRequest registerRequest);
+    TokenPair login(LoginRequest loginRequest);
 }

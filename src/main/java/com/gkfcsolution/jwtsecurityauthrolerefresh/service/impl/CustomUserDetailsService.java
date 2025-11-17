@@ -41,7 +41,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     private Collection<? extends GrantedAuthority> getAuthorities(User user) {
-        GrantedAuthority authority = new SimpleGrantedAuthority("user.getRole().name()");
+        GrantedAuthority authority = new SimpleGrantedAuthority(user.getRole().name());
         return List.of(authority);
     }
 }
