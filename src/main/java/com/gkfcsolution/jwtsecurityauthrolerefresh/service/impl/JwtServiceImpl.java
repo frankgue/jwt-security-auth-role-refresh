@@ -5,7 +5,6 @@ import com.gkfcsolution.jwtsecurityauthrolerefresh.service.JwtService;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.security.SignatureException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,6 +31,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 public class JwtServiceImpl implements JwtService {
+
     @Value("${app.jwt.secret}")
     private String jwtSecret;
     @Value("${app.jwt.expiration-ms}")
@@ -54,43 +54,48 @@ public class JwtServiceImpl implements JwtService {
 
        return generateToken(authentication, refreshTokenExpirationMs, claims);
     }
+
+
+
     // Validate token
     @Override
-    public boolean isValidToken(String token, UserDetails userDetails){
+    public boolean valideTokenForUser(String token, UserDetails userDetails){
 
         final String username = extractUsernameFromToken(token);
-        if (!username.equals(userDetails.getUsername())) {
-            return false;
-        }
-
-        try {
-            Jwts.parser()
-                    .verifyWith(getSignInKey())
-                    .build()
-                    .parseSignedClaims(token);
-
-            return true;
-        } catch (SignatureException e){
-            log.error("Invalid JWT signature: {}", e.getMessage());
-        } catch (MalformedJwtException e){
-            log.error("Invalid JWT token: {}", e.getMessage());
-        } catch (ExpiredJwtException e){
-            log.error("JWT token is expired: {}", e.getMessage());
-        } catch (UnsupportedJwtException e){
-            log.error("JWT token is unsupported: {}", e.getMessage());
-        } catch (IllegalArgumentException e){
-            log.error("JWT claims string is empty: {}", e.getMessage());
-        }
-        return false;
+       return username != null && username.equals(userDetails.getUsername()) && isTokenExpired(token);
     }
+
     // Validate if the token is refresh token
     public boolean isRefreshToken(String token){
-        Claims claims = Jwts.parser()
-                .verifyWith(getSignInKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        Claims claims = extractAllClaims(token);
+        if (claims == null){
+            return false;
+        }
         return "refresh".equals(claims.get("tokenType"));
+    }
+
+    public String extractUsernameFromToken(String token) {
+
+        Claims claims = extractAllClaims(token);
+
+        if (claims != null){
+            return claims.getSubject();
+        }
+
+        return null;
+    }
+
+    @Override
+    public TokenPair generateTokenPair(Authentication authentication) {
+        String accessToken = generateAccessToken(authentication);
+        String refreshToken = generateRefreshToken(authentication);
+
+        return new TokenPair(accessToken, refreshToken);
+    }
+
+    @Override
+    public boolean isValidToken(String token) {
+        return extractAllClaims(token) != null && isTokenExpired(token);
     }
 
     private SecretKey getSignInKey() {
@@ -122,21 +127,25 @@ public class JwtServiceImpl implements JwtService {
                 .compact();
     }
 
-    public String extractUsernameFromToken(String token) {
-        return Jwts.parser()
-                .verifyWith(getSignInKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload()
-                .getSubject();
+    private boolean isTokenExpired(String token) {
+        return !extractAllClaims(token).getExpiration().before(new Date());
     }
 
-    @Override
-    public TokenPair generateTokenPair(Authentication authentication) {
-        String accessToken = generateAccessToken(authentication);
-        String refreshToken = generateRefreshToken(authentication);
+    private Claims extractAllClaims(String token) {
+        Claims claims = null;
+        try {
+            claims = Jwts.parser()
+                    .verifyWith(getSignInKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (JwtException | IllegalArgumentException e){
+            log.error("Could not extract claims from token: {}", e.getMessage());
+            throw new RuntimeException("Could not extract claims from token", e);
+        }
 
-        return new TokenPair(accessToken, refreshToken);
+        return claims;
     }
+
 
 }
